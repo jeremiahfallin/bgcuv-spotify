@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { Button, Flex, TextField, Text, Box, Card } from "@radix-ui/themes";
+import {
+  Root as ToastRoot,
+  Viewport as ToastViewport,
+  Title as ToastTitle,
+  Description as ToastDescription,
+  Close as ToastClose,
+} from "@radix-ui/react-toast";
 
 // Define a type for the track item for better type safety
 interface Track {
@@ -24,6 +31,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [addingSongId, setAddingSongId] = useState<string | null>(null);
   const [addSongMessage, setAddSongMessage] = useState<string | null>(null);
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastContent, setToastContent] = useState({
+    title: "",
+    description: "",
+  });
 
   const handleSearch = async (event: React.FormEvent) => {
     // Prevent the form from reloading the page
@@ -80,12 +93,13 @@ export default function Home() {
       });
 
       const data = await response.json();
+      console.log(data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to add song.");
       }
 
-      setAddSongMessage(`Successfully added song!`);
+      setAddSongMessage(data.message);
       setTimeout(() => setAddSongMessage(null), 3000); // Clear message after 3 seconds
     } catch (err) {
       const message =
@@ -133,60 +147,69 @@ export default function Home() {
 
       {error && (
         <Text color="red" size="2">
-          Error: {error}
+          {error}
+        </Text>
+      )}
+      {addSongMessage && (
+        <Text color="green" size="2">
+          Result: {addSongMessage}
         </Text>
       )}
 
       <Flex direction="row" gap="3" justify="center" width="100%" wrap="wrap">
         {results.length > 0 &&
           results.map((track) => (
-            <a
-              key={track.id}
-              href={track.external_urls.spotify}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <Card>
-                <Flex gap="3" align="center">
-                  <img
-                    src={
-                      track.album.images[0]?.url ||
-                      "https://placehold.co/64x64/0a0a0a/ededed?text=N/A"
-                    }
-                    alt={track.name}
-                    width="64"
-                    height="64"
-                    style={{ borderRadius: "4px" }}
-                  />
-                  <Box>
-                    <Text as="div" weight="bold">
-                      {track.name}
-                    </Text>
-                    <Text as="div" color="gray">
-                      {track.artists.map((a) => a.name).join(", ")}
-                    </Text>
-                  </Box>
-                  <Button
-                    size="2"
-                    variant="soft"
-                    onClick={() =>
-                      handleAddToPlaylist(
-                        track.id,
-                        track.id,
-                        track.name,
-                        track.artists[0].name
-                      )
-                    }
-                    disabled={addingSongId === track.id}
-                  >
-                    {addingSongId === track.id ? "Adding..." : "Add"}
-                  </Button>
-                </Flex>
-              </Card>
-            </a>
+            <Card key={track.id}>
+              <Flex gap="3" align="center">
+                <img
+                  src={
+                    track.album.images[0]?.url ||
+                    "https://placehold.co/64x64/0a0a0a/ededed?text=N/A"
+                  }
+                  alt={track.name}
+                  width="64"
+                  height="64"
+                  style={{ borderRadius: "4px" }}
+                />
+                <Box>
+                  <Text as="div" weight="bold">
+                    {track.name}
+                  </Text>
+                  <Text as="div" color="gray">
+                    {track.artists.map((a) => a.name).join(", ")}
+                  </Text>
+                </Box>
+                <Button
+                  size="2"
+                  variant="soft"
+                  onClick={() =>
+                    handleAddToPlaylist(
+                      track.id,
+                      track.id,
+                      track.name,
+                      track.artists[0].name
+                    )
+                  }
+                  disabled={addingSongId === track.id}
+                >
+                  {addingSongId === track.id ? "Adding..." : "Add"}
+                </Button>
+              </Flex>
+            </Card>
           ))}
       </Flex>
+      <ToastRoot
+        className="ToastRoot"
+        open={toastOpen}
+        onOpenChange={setToastOpen}
+      >
+        <ToastTitle className="ToastTitle">{toastContent.title}</ToastTitle>
+        <ToastDescription className="ToastDescription">
+          {toastContent.description}
+        </ToastDescription>
+        <ToastClose />
+      </ToastRoot>
+      <ToastViewport className="ToastViewport" />
     </Flex>
   );
 }

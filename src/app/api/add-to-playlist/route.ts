@@ -11,13 +11,25 @@ const {
   SPOTIFY_ALL_SONG_PLAYLIST_ID,
 } = process.env;
 
+interface SongEvaluation {
+  evaluation:
+    | "appropriate"
+    | "likely_appropriate"
+    | "likely_inappropriate"
+    | "inappropriate";
+  reasoning: string;
+  issues: string[];
+  song_title: string;
+  artist: string;
+}
+
 async function lookUpSongApproval({
   songTitle,
   artist,
 }: {
   songTitle: string;
   artist: string;
-}) {
+}): Promise<SongEvaluation> {
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
   });
@@ -72,7 +84,6 @@ We have extremely strict guidelines for what is acceptable. We do not allow prof
     ],
   };
   const model = "gemini-2.5-flash";
-  console.log(songTitle, artist);
   const contents = [
     {
       role: "user",
@@ -84,13 +95,15 @@ We have extremely strict guidelines for what is acceptable. We do not allow prof
     },
   ];
 
-  const response = await ai.models.generateContent({
+  const response = (await ai.models.generateContent({
     model,
     config,
     contents,
-  });
+  })) as unknown as {
+    text: string;
+  };
 
-  return response.text;
+  return JSON.parse(response.text) as SongEvaluation;
 }
 
 /**
@@ -168,55 +181,85 @@ export async function POST(request: Request) {
     const songs = allSongsData.tracks.items;
 
     for (const song of songs) {
-      if (song.track.uri === trackUri) {
+      if (song.track.uri === `spotify:track:${trackUri}`) {
         return NextResponse.json(
-          { message: "Song already in playlist!" },
-          { status: 200 }
+          { message: "Song already requested!" },
+          { status: 405 }
         );
       }
     }
 
     const approval = await lookUpSongApproval({ songTitle, artist });
 
-    console.log(approval);
-
-    return NextResponse.json(
-      { message: "Song already in playlist!" },
-      { status: 200 }
-    );
-
     // Make the request to the Spotify API to add the track
-    const response = await fetch(
-      `https://api.spotify.com/v1/playlists/${SPOTIFY_PLAYLIST_ID}/tracks`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          uris: [trackUri],
-        }),
-      }
-    );
+    if (approval.evaluation === "appropriate") {
+      const response = await fetch(
+        `https://api.spotify.com/v1/playlists/${SPOTIFY_PLAYLIST_ID}/tracks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            uris: [`spotify:track:${trackUri}`],
+          }),
+        }
+      );
+      await fetch(
+        `https://api.spotify.com/v1/playlists/${SPOTIFY_ALL_SONG_PLAYLIST_ID}/tracks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            uris: [`spotify:track:${trackUri}`],
+          }),
+        }
+      );
 
-    // Handle errors from the Spotify API
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Spotify API error while adding track:", errorData);
+      // Handle errors from the Spotify API
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Spotify API error while adding track:", errorData);
+        return NextResponse.json(
+          { message: "Failed to add song to playlist.", details: errorData },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+
+      // Return a success response
       return NextResponse.json(
-        { message: "Failed to add song to playlist.", details: errorData },
-        { status: response.status }
+        { message: "Song added to playlist successfully!", data },
+        { status: 200 }
+      );
+    } else {
+      await fetch(
+        `https://api.spotify.com/v1/playlists/${SPOTIFY_ALL_SONG_PLAYLIST_ID}/tracks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            uris: [`spotify:track:${trackUri}`],
+          }),
+        }
+      );
+      return NextResponse.json(
+        {
+          message: `Song not added to playlist, decision: ${
+            approval.evaluation
+          } for reasons: ${approval.issues.join(", ")}`,
+        },
+        { status: 405 }
       );
     }
-
-    const data = await response.json();
-
-    // Return a success response
-    return NextResponse.json(
-      { message: "Song added to playlist successfully!", data },
-      { status: 200 }
-    );
   } catch (error) {
     console.error("--- CATCH BLOCK ERROR in /api/add-to-playlist ---", error);
     const errorMessage =

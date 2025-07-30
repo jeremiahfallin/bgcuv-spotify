@@ -16,7 +16,8 @@ export default function Login() {
   const handleLogin = () => {
     const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID; // Recommended to prefix with NEXT_PUBLIC_ for frontend access in Next.js
     const redirectUri = "http://127.0.0.1:3000/callback"; // This must be whitelisted in your Spotify Developer Dashboard
-    const scope = "user-read-private user-read-email";
+    const scope =
+      "user-read-private user-read-email playlist-modify-public playlist-modify-private";
     const state = generateRandomString(16);
 
     // In a real app, you would store the 'state' value (e.g., in localStorage)

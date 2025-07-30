@@ -12,7 +12,7 @@ export default function CallbackPage() {
 
     // Only run this if we have a code AND the request hasn't been sent yet
     if (code && !requestSent.current) {
-      requestSent.current = true; // <-- Mark as sent immediately
+      requestSent.current = true;
 
       fetch("/api/spotify/callback", {
         method: "POST",
