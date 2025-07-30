@@ -43,7 +43,6 @@ export async function POST(request) {
       !contentType.includes("application/json")
     ) {
       const errorText = await response.text();
-      console.log(contentType);
       return NextResponse.json(
         { error: "Failed to fetch tokens from Spotify.", details: errorText },
         { status: response.status }
@@ -51,11 +50,8 @@ export async function POST(request) {
     }
 
     const data = await response.json();
-    console.log("Successfully fetched tokens:", data);
 
     const refreshToken = data.refresh_token;
-
-    console.log("My Refresh Token:", refreshToken);
 
     return NextResponse.json(data);
   } catch (error) {

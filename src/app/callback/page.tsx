@@ -23,7 +23,6 @@ export default function CallbackPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          console.log("Success:", data);
           // Redirect or do something with the tokens
         })
         .catch((err) => console.error(err));
