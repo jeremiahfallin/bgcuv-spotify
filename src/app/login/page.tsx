@@ -1,7 +1,7 @@
 "use client";
 
 // A simple function to generate a random string for the 'state' parameter
-const generateRandomString = (length: number) => {
+const generateRandomString = (length) => {
   let text = "";
   const possible =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -23,11 +23,6 @@ export default function Login() {
     // In a real app, you would store the 'state' value (e.g., in localStorage)
     // to verify it on the callback page.
     // localStorage.setItem('spotify_auth_state', state);
-
-    if (!clientId) {
-      console.error("Spotify client ID is not set.");
-      return;
-    }
 
     const params = new URLSearchParams({
       response_type: "code",

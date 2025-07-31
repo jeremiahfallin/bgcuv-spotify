@@ -1,8 +1,8 @@
 // File: /app/api/spotify/callback/route.js
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const { code } = await request.json();
     const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -56,10 +56,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("--- CATCH BLOCK ERROR ---", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
-      { error: "An unexpected error occurred.", details: errorMessage },
+      { error: "An unexpected error occurred.", details: error.message },
       { status: 500 }
     );
   }
