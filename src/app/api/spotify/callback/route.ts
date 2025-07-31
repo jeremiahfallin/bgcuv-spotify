@@ -1,8 +1,8 @@
 // File: /app/api/spotify/callback/route.js
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json();
     const clientId = process.env.SPOTIFY_CLIENT_ID;
