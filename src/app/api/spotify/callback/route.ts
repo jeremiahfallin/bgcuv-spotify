@@ -56,8 +56,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("--- CATCH BLOCK ERROR ---", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
-      { error: "An unexpected error occurred.", details: error.message },
+      { error: "An unexpected error occurred.", details: errorMessage },
       { status: 500 }
     );
   }
