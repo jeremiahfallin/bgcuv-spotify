@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function CallbackPage() {
+function Callback() {
   const searchParams = useSearchParams();
   const requestSent = useRef(false); // <-- Add this ref
 
@@ -30,4 +30,12 @@ export default function CallbackPage() {
   }, [searchParams]);
 
   return <div>Loading...</div>;
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Callback />
+    </Suspense>
+  );
 }
