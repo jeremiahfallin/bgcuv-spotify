@@ -28,9 +28,7 @@ export default function Home() {
   const [artist, setArtist] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [addingSongId, setAddingSongId] = useState<string | null>(null);
-  const [addSongMessage, setAddSongMessage] = useState<string | null>(null);
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastContent, setToastContent] = useState({
@@ -42,7 +40,6 @@ export default function Home() {
     // Prevent the form from reloading the page
     event.preventDefault();
     setLoading(true);
-    setError(null);
     setResults([]);
 
     try {
@@ -67,9 +64,10 @@ export default function Home() {
       setResults(data.tracks?.items || []);
     } catch (error) {
       console.error("Failed to fetch from API route:", error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred."
-      );
+      const message =
+        error instanceof Error ? error.message : "An unknown error occurred.";
+      setToastContent({ title: "Error searching", description: message });
+      setToastOpen(true);
     } finally {
       setLoading(false);
     }
@@ -82,8 +80,6 @@ export default function Home() {
     artist: string
   ) => {
     setAddingSongId(trackId);
-    setAddSongMessage(null);
-    setError(null);
 
     try {
       const response = await fetch("/api/add-to-playlist", {
@@ -98,12 +94,16 @@ export default function Home() {
         throw new Error(data.message || "Failed to add song.");
       }
 
-      setAddSongMessage(data.message);
-      setTimeout(() => setAddSongMessage(null), 3000); // Clear message after 3 seconds
+      setToastContent({
+        title: "Success",
+        description: `${songTitle} by ${artist} has been added to the playlist.`,
+      });
+      setToastOpen(true);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unknown error occurred.";
-      setError(`Error: ${message}`);
+      setToastContent({ title: "Error", description: message });
+      setToastOpen(true);
     } finally {
       setAddingSongId(null);
     }
@@ -143,17 +143,6 @@ export default function Home() {
           </Flex>
         </form>
       </Box>
-
-      {error && (
-        <Text color="red" size="2">
-          {error}
-        </Text>
-      )}
-      {addSongMessage && (
-        <Text color="green" size="2">
-          Result: {addSongMessage}
-        </Text>
-      )}
 
       <Flex direction="row" gap="3" justify="center" width="100%" wrap="wrap">
         {results.length > 0 &&
